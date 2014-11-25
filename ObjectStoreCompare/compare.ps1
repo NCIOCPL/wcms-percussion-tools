@@ -85,14 +85,13 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
                 # Record any found differences
                 if($difference -ne $null) {
-Write-Host "found changes! $fieldName"
-                    WriteComparison "$new::$type field $fieldName - $difference"
+                    WriteComparison "$type field $fieldName - $difference"
                 }
                 
 
             } else {
                 # Field not found.
-                WriteComparison "$new::$type removed field '$fieldName'."
+                WriteComparison "$type removed field '$fieldName'."
             }
         }
 
@@ -102,7 +101,7 @@ Write-Host "found changes! $fieldName"
             $oldField = $oldDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
 
             if(-not $oldField) {
-                WriteComparison "$new::$type added field '$fieldName."
+                WriteComparison "$type added field '$fieldName."
             }
         }
 
