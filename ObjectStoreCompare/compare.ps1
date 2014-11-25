@@ -39,12 +39,16 @@ function Main($oldPath, $newPath) {
 #>
 function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
-    BeginCompare "Compare Fields"
+    BeginCompare "Changes to Fields"
 
     foreach($file in $reconciledFileList) {
         Write-Host $file
         [xml]$oldDoc = Get-Content "$oldPath\$file"
         [xml]$newDoc = Get-Content "$newPath\$file"
+
+        $addedFields = @()
+        $removedFields = @()
+        $changedFields = @()
 
         $type = GetTypeFromFilename $file
 
@@ -85,13 +89,13 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
                 # Record any found differences
                 if($difference -ne $null) {
-                    WriteComparison "$type field $fieldName - $difference"
+                    $changedFields = $changedFields + "$fieldName - $difference"
                 }
                 
 
             } else {
                 # Field not found.
-                WriteComparison "$type removed field '$fieldName'."
+                $removedFields = $removedFields + $fieldName
             }
         }
 
@@ -101,8 +105,39 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
             $oldField = $oldDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
 
             if(-not $oldField) {
-                WriteComparison "$type added field '$fieldName."
+                $addedFields = $addedFields + $fieldName
             }
+        }
+
+        # Output summary of changes.
+        if($addedFields.length -gt 0 -or $removedFields.length -gt 0 -or $changedFields.length -gt 0 ) {
+            BeginCompare $type
+
+            if($addedFields.length -gt 0) {
+                BeginCompare "Added Fields"
+                foreach($field in $addedFields) {
+                    WriteComparison $field
+                }
+                EndCompare
+            }
+
+            if($removedFields.length -gt 0) {
+                BeginCompare "Removed Fields"
+                foreach($field in $removedFields) {
+                    WriteComparison $field
+                }
+                EndCompare
+            }
+
+            if($changedFields.length -gt 0) {
+                BeginCompare "Changed Fields"
+                foreach($field in $changedFields) {
+                    WriteComparison $field
+                }
+                EndCompare
+            }
+
+            EndCompare
         }
 
     }
@@ -140,7 +175,9 @@ function CompareNodeValues($oldDoc, $newDoc, $pathQuery) {
 function CompareFileLists($oldFileList, $newFileList) {
     $mergedList = @()
 
-    BeginCompare "Compare Type Lists"
+    $newTypes = @()
+    $removedTypes = @()
+
 
     #Find items in the old list missing from the new one.
     $lookup = New-Object 'System.Collections.Generic.HashSet[string]'
@@ -149,7 +186,7 @@ function CompareFileLists($oldFileList, $newFileList) {
     foreach($file in $oldFileList) {
         if (-not $lookup.Contains($file)) {
             $type = GetTypeFromFilename $file
-            WriteComparison "Type $type removed in $new."
+            $removedTypes = $removedTypes + $type
         }
     }
 
@@ -160,13 +197,27 @@ function CompareFileLists($oldFileList, $newFileList) {
     foreach($file in $newFileList) {
         if (-not $lookup.Contains($file)) {
             $type = GetTypeFromFilename $file
-            WriteComparison "Type $type added in $new."
+            $newTypes = $newTypes + $type
         } else {
             $mergedList += $file
         }
     }
 
-    EndCompare
+    if($newTypes.length -gt 0 ) {
+        BeginCompare "New Types"
+        foreach($field in $newTypes) {
+            WriteComparison $field
+        }
+        EndCompare
+    }
+
+    if($removedTypes.length -gt 0) {
+        BeginCompare "Removed Types"
+        foreach($field in $removedTypes) {
+            WriteComparison $field
+        }
+        EndCompare
+    }
 
     return $mergedList
 }
@@ -188,7 +239,7 @@ function GetTypeFromFilename($filename) {
 }
 
 function BeginCompare($title) {
-    $html = "<section><h2>$title</h2><ul>"
+    $html = "<section><p><strong>$title</strong></p><ul>"
     Write-Host $title":"
     Add-Content $OutputFile -Value $html
 }
@@ -197,6 +248,8 @@ function EndCompare() {
     $html = "</ul></section>"
     Add-Content $OutputFile -Value $html
 }
+
+$internalNestingLevel = 1
 
 function WriteComparison($message) {
     Write-Host $message
