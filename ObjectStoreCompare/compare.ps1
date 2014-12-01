@@ -61,11 +61,31 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
                 #Field exists on both sides.  Compare details.
                 $difference = $null
+                $descriptionList = @()
+                $nodeQueryList = @()
 
+
+                $controlTypeDesc = "Control type"
                 $controlTypeQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/@name"
+                $descriptionList = $descriptionList + $controlTypeDesc
+                $nodeQueryList = nodeQueryList + $controlTypeQuery
+
+
+                $labelDesc = "Label"
                 $labelQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/Label/PSXDisplayText/text()"
+                $descriptionList = $descriptionList + $labelDesc
+                $nodeQueryList = nodeQueryList + $labelQuery
+
+                $maxlengthDesc = "Max length"
                 $maxlengthQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='maxlength']/DataLocator/PSXTextLiteral/text/text()"
+                $descriptionList = $descriptionList + $maxlengthDesc
+                $nodeQueryList = nodeQueryList + $maxlengthQuery
+
+                $helptextDesc = "Helptext"
                 $helptextQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='helptext']/DataLocator/PSXTextLiteral/text/text()"
+                $descriptionList = $descriptionList + $helptextDesc
+                $nodeQueryList = nodeQueryList + $helptextQuery
+
 
                 $result = CompareNodeValues $oldDoc $newDoc $controlTypeQuery
                 if($result) {
