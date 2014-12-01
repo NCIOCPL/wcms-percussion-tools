@@ -69,22 +69,26 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
                 $result = CompareNodeValues $oldDoc $newDoc $controlTypeQuery
                 if($result) {
-                    $difference = $difference + "Control changed from '" + $result.oldValue + "'' to '" + $result.newValue + "'. "
+                    $difftext = GetFieldDifferenceText "Control" $result
+                    $difference = $difference + $difftext
                 }
 
                 $result = CompareNodeValues $oldDoc $newDoc $labelQuery
                 if($result) {
-                    $difference = $difference + "Label changed from '" + $result.oldValue + "'' to '" + $result.newValue + "'. "
+                    $difftext = GetFieldDifferenceText "Label" $result
+                    $difference = $difference + $difftext
                 }
 
                 $result = CompareNodeValues $oldDoc $newDoc $maxlengthQuery
                 if($result) {
-                    $difference = $difference + "Max length changed from '" + $result.oldValue + "'' to '" + $result.newValue + "'. "
+                    $difftext = GetFieldDifferenceText "Max length" $result
+                    $difference = $difference + $difftext
                 }
 
                 $result = CompareNodeValues $oldDoc $newDoc $helptextQuery
                 if($result) {
-                    $difference = $difference + "Helptext changed from '" + $result.oldValue + "'' to '" + $result.newValue + "'. "
+                    $difftext = GetFieldDifferenceText "Helptext" $result
+                    $difference = $difference + $difftext
                 }
 
                 # Record any found differences
@@ -143,6 +147,25 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
     }
 
     EndCompare
+}
+
+
+function GetFieldDifferenceText($description, $difference) {
+    $text = ""
+    $old = $difference.oldValue
+    $new = $difference.newValue
+
+    if ($old -and $new) {
+        $text = "$description changed from '$old' to '$new'. "
+    } elseif (-not $old -and $new) {
+        $text = "$description was not previously defined. "
+    } elseif ($old -and -not $new) {
+        $text = "$description is no longer defined. "
+    } else {
+        Write-Error "Logic Error. Old and New values are both null in GetFieldDifferenceText."
+    }
+
+    return $text
 }
 
 
