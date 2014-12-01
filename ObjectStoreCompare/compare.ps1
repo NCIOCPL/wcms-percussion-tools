@@ -61,61 +61,39 @@ function CompareFields($oldPath, $newPath, $reconciledFileList) {
 
                 #Field exists on both sides.  Compare details.
                 $difference = $null
-                $descriptionList = @()
-                $nodeQueryList = @()
 
 
                 $controlTypeDesc = "Control type"
                 $controlTypeQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/@name"
-                $descriptionList = $descriptionList + $controlTypeDesc
-                $nodeQueryList = nodeQueryList + $controlTypeQuery
 
 
                 $labelDesc = "Label"
                 $labelQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/Label/PSXDisplayText/text()"
-                $descriptionList = $descriptionList + $labelDesc
-                $nodeQueryList = nodeQueryList + $labelQuery
 
                 $maxlengthDesc = "Max length"
                 $maxlengthQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='maxlength']/DataLocator/PSXTextLiteral/text/text()"
-                $descriptionList = $descriptionList + $maxlengthDesc
-                $nodeQueryList = nodeQueryList + $maxlengthQuery
 
                 $helptextDesc = "Helptext"
                 $helptextQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='helptext']/DataLocator/PSXTextLiteral/text/text()"
-                $descriptionList = $descriptionList + $helptextDesc
-                $nodeQueryList = nodeQueryList + $helptextQuery
 
+                $descriptionList = @($controlTypeDesc, $labelDesc, $maxlengthDesc, $helptextDesc)
+                $nodeQueryList = @($controlTypeQuery, $labelQuery, $maxlengthQuery, $helptextQuery)
 
-                $result = CompareNodeValues $oldDoc $newDoc $controlTypeQuery
-                if($result) {
-                    $difftext = GetFieldDifferenceText "Control" $result
-                    $difference = $difference + $difftext
+                for($i = 0; $i -lt $descriptionList.length; $i++) {
+                    $query = $nodeQueryList[$i]
+                    $result = CompareNodeValues $oldDoc $newDoc $query
+                    if($result) {
+                        $description = $descriptionList[$i]
+                        $difftext = GetFieldDifferenceText $description $result
+                        $difference = $difference + $difftext
+                    }
                 }
 
-                $result = CompareNodeValues $oldDoc $newDoc $labelQuery
-                if($result) {
-                    $difftext = GetFieldDifferenceText "Label" $result
-                    $difference = $difference + $difftext
-                }
-
-                $result = CompareNodeValues $oldDoc $newDoc $maxlengthQuery
-                if($result) {
-                    $difftext = GetFieldDifferenceText "Max length" $result
-                    $difference = $difference + $difftext
-                }
-
-                $result = CompareNodeValues $oldDoc $newDoc $helptextQuery
-                if($result) {
-                    $difftext = GetFieldDifferenceText "Helptext" $result
-                    $difference = $difference + $difftext
-                }
 
                 # Record any found differences
                 if($difference -ne $null) {
                     $changedFields = $changedFields + "$fieldName - $difference"
                 }
-                
 
             } else {
                 # Field not found.
@@ -178,9 +156,9 @@ function GetFieldDifferenceText($description, $difference) {
     if ($old -and $new) {
         $text = "$description changed from '$old' to '$new'. "
     } elseif (-not $old -and $new) {
-        $text = "$description was not previously defined. "
+        $text = "$description node added. "
     } elseif ($old -and -not $new) {
-        $text = "$description is no longer defined. "
+        $text = "$description node removed. "
     } else {
         Write-Error "Logic Error. Old and New values are both null in GetFieldDifferenceText."
     }
