@@ -1,5 +1,5 @@
 <#
-    $source Location of the CDE files which are being deployed.
+    $source Location of the GateKeeper files which are being deployed.
 #>
 param ($source)
 
