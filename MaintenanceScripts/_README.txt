@@ -4,6 +4,9 @@ Scripts may be run from either the PowerShell command prompt as "./ScriptName.ps
 from the Windows command prompt as "powershell ./ScriptName.ps1"
 
 
+cdeBackup.ps1		Creates a back up of the CDE code folders.
+
+
 cdeDeploy.ps1		Deploys CDE code from a set of per-site folders to the matching Preview
 					and Live sites.
 
