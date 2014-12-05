@@ -5,8 +5,8 @@ param ($source)
 
 $SITE_LIST = @("CancerGov", "MobileCancerGov", "CCOP", "DCEG", "Imaging", "Proteomics", "TCGA")
 $SUBSITE_LIST = @("Preview", "Live")
-$DEPLOY_BASE = "c:\temp\deploy"
-$BACKUP_BASE = "c:\temp\backup"
+$DEPLOY_BASE = "E:\Content\PercussionSites\CDESites"
+$BACKUP_BASE = "E:\backups-CDE"
 
 function Main {
 

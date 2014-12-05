@@ -5,7 +5,7 @@ param ($source)
 
 $SITE_LIST = @("CancerGov", "MobileCancerGov", "CCOP", "DCEG", "Imaging", "Proteomics", "TCGA")
 $SUBSITE_LIST = @("Preview", "Live")
-$DEPLOY_BASE = "c:\temp\deploy"
+$DEPLOY_BASE = "E:\Content\PercussionSites\CDESites"
 
 function Main ($sourceLocation) {
     if( -not $sourceLocation ) {
