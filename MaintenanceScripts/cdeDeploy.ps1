@@ -17,6 +17,7 @@ function Main ($sourceLocation) {
 
     ValidateLocation $sourceLocation
     Deploy $sourceLocation
+    Write-Host -foregroundcolor 'green' "Deployment completed."
 }
 
 
