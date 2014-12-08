@@ -3,9 +3,8 @@
 #>
 param ($source)
 
-$APPLICATION_LIST = @("Admin", "CDRPreviewWS", "ProcMgr", "WebSvc")
-##$DEPLOY_BASE = "E:\Content\GateKeeper"
-$DEPLOY_BASE = "C:\temp\Deploy"
+$APPLICATION_LIST = @("Admin", "CDRPreviewWS", "WebSvc", "ProcMgr", "XSL")
+$DEPLOY_BASE = "E:\Content\GateKeeper"
 
 function Main ($sourceLocation) {
     if( -not $sourceLocation ) {
@@ -16,9 +15,9 @@ function Main ($sourceLocation) {
     }
 
     ValidateLocation $sourceLocation
-	#Stop-Service "GateKeeper Process Manager"
+	Stop-Service "GateKeeper Process Manager"
     Deploy $sourceLocation
-	#Start-Service "GateKeeper Process Manager"
+	Start-Service "GateKeeper Process Manager"
     Write-Host -foregroundcolor 'green' "Deployment completed."
 }
 
