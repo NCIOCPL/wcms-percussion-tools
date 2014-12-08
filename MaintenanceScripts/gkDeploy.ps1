@@ -3,8 +3,9 @@
 #>
 param ($source)
 
-$APPLICATION_LIST = @("CancerGov", "MobileCancerGov", "CCOP", "DCEG", "Imaging", "Proteomics", "TCGA")
-$DEPLOY_BASE = "E:\Content\PercussionSites\CDESites"
+$APPLICATION_LIST = @("Admin", "CDRPreviewWS", "ProcMgr", "WebSvc")
+##$DEPLOY_BASE = "E:\Content\GateKeeper"
+$DEPLOY_BASE = "C:\temp\Deploy"
 
 function Main ($sourceLocation) {
     if( -not $sourceLocation ) {
