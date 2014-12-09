@@ -3,7 +3,7 @@
 #>
 param ($source)
 
-$APPLICATION_LIST = @("Admin", "CDRPreviewWS", "WebSvc", "ProcMgr", "XSL")
+$APPLICATION_LIST = @("Admin", "CDRPreviewWS", "WebSvc", "ProcMgr", "XSL", "DTD")
 $DEPLOY_BASE = "E:\Content\GateKeeper"
 $BACKUP_BASE = "E:\backups-GK"
 
