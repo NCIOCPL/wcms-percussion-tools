@@ -8,20 +8,49 @@
    					(<xsl:value-of select="/PSXApplication/PSXContentEditor/@contentType" />)
    				</h1>
 
+				<p><strong>Table:</strong> <xsl:value-of select="//PSXContainerLocator/PSXTableSet/PSXTableRef/@name" />
+				</p>
+				
+				<h2>Shared Field Sets</h2>
+				<ul>
+				<xsl:for-each select="//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName">
+					<li><xsl:value-of select="." /></li>
+				</xsl:for-each>
+				</ul>
+				
+				<h3>Excluding shared field names</h3>
+				<ul>
+				<xsl:for-each select="//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldExcludes/FieldRef">
+					<li><xsl:value-of select="." /></li>
+				</xsl:for-each>
+				</ul>
+				
    				<h2>Fields</h2>
    				<table>
    					<thead>
    						<tr>
    							<th>Field</th>
+							<th>Source</th>
    							<th>Label</th>
-   							<th>Type</th>
+   							<th>UI Control</th>
    							<th>Length</th>
    							<th>Helptext</th>
    						</tr>
    					</thead>
    				<xsl:for-each select="//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping">
-   					<tr>
-   						<td><xsl:value-of select="FieldRef" /></td>
+
+					<xsl:variable name="fieldName" select="FieldRef" />
+
+					<tr>
+   						<td><xsl:value-of select="$fieldName" /></td>
+						
+						<td>
+							<xsl:choose>
+								<xsl:when test="//PSXFieldSet/PSXField[@name=$fieldName]"><xsl:value-of select="//PSXFieldSet/PSXField[@name=$fieldName]/@type" /></xsl:when>
+								<xsl:when test="starts-with($fieldName, 'sys_')">system</xsl:when>
+								<xsl:otherwise>shared</xsl:otherwise>
+							</xsl:choose>
+						</td>
 
    						<!-- Labels are only available for local field definitions. -->
    						<td><xsl:value-of select="PSXUISet/Label/PSXDisplayText" /></td>
