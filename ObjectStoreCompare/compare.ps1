@@ -25,7 +25,7 @@ function Main($oldPath, $newPath) {
     $newFileList = GetTypeFileList($newStore)
 
     $reconciledList = CompareFileLists $oldFileList $newFileList
-    CompareFields $oldStore $newStore $reconciledList
+    CompareTypes $oldStore $newStore $reconciledList
 
     EndComparisonReport
 }
@@ -37,114 +37,177 @@ function Main($oldPath, $newPath) {
     $newPath - Path to the new objectStore
     $reconciledFileList - List of type definition files which exist in both objectStores.
 #>
-function CompareFields($oldPath, $newPath, $reconciledFileList) {
+function CompareTypes($oldPath, $newPath, $reconciledFileList) {
 
-    BeginCompare "Changes to Fields"
+    BeginCompare "Changes to Types"
 
-    foreach($file in $reconciledFileList) {
+    foreach( $file in $reconciledFileList ) {
         Write-Host $file
         [xml]$oldDoc = Get-Content "$oldPath\$file"
         [xml]$newDoc = Get-Content "$newPath\$file"
 
-        $addedFields = @()
-        $removedFields = @()
-        $changedFields = @()
-
         $type = GetTypeFromFilename $file
 
-        # Loop through the old set of fields, listing any that are missing or have changed.
-        foreach($field in $oldDoc.SelectNodes("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping")) {
-            $fieldName = $field.FieldRef
-            $newField = $newDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
-
-            if($newField) {
-
-                #Field exists on both sides.  Compare details.
-                $difference = $null
-
-
-                $controlTypeDesc = "Control type"
-                $controlTypeQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/@name"
-
-
-                $labelDesc = "Label"
-                $labelQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/Label/PSXDisplayText/text()"
-
-                $maxlengthDesc = "Max length"
-                $maxlengthQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='maxlength']/DataLocator/PSXTextLiteral/text/text()"
-
-                $helptextDesc = "Helptext"
-                $helptextQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='helptext']/DataLocator/PSXTextLiteral/text/text()"
-
-                $descriptionList = @($controlTypeDesc, $labelDesc, $maxlengthDesc, $helptextDesc)
-                $nodeQueryList = @($controlTypeQuery, $labelQuery, $maxlengthQuery, $helptextQuery)
-
-                for($i = 0; $i -lt $descriptionList.length; $i++) {
-                    $query = $nodeQueryList[$i]
-                    $result = CompareNodeValues $oldDoc $newDoc $query
-                    if($result) {
-                        $description = $descriptionList[$i]
-                        $difftext = GetFieldDifferenceText $description $result
-                        $difference = $difference + $difftext
-                    }
-                }
-
-
-                # Record any found differences
-                if($difference -ne $null) {
-                    $changedFields = $changedFields + "$fieldName - $difference"
-                }
-
-            } else {
-                # Field not found.
-                $removedFields = $removedFields + $fieldName
-            }
-        }
-
-        # Loop through the new set of fields to find any additions.
-        foreach($field in $newDoc.SelectNodes("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping")) {
-            $fieldName = $field.FieldRef
-            $oldField = $oldDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
-
-            if(-not $oldField) {
-                $addedFields = $addedFields + $fieldName
-            }
-        }
-
-        # Output summary of changes.
-        if($addedFields.length -gt 0 -or $removedFields.length -gt 0 -or $changedFields.length -gt 0 ) {
-            BeginCompare $type
-
-            if($addedFields.length -gt 0) {
-                BeginCompare "Added Fields"
-                foreach($field in $addedFields) {
-                    WriteComparison $field
-                }
-                EndCompare
-            }
-
-            if($removedFields.length -gt 0) {
-                BeginCompare "Removed Fields"
-                foreach($field in $removedFields) {
-                    WriteComparison $field
-                }
-                EndCompare
-            }
-
-            if($changedFields.length -gt 0) {
-                BeginCompare "Changed Fields"
-                foreach($field in $changedFields) {
-                    WriteComparison $field
-                }
-                EndCompare
-            }
-
-            EndCompare
-        }
-
+        CompareSharedFields $type $oldDoc $newDoc
+        CompareFields $type $oldDoc $newDoc
     }
 
     EndCompare
+}
+
+<#
+    Compare shared field information between an old and new type definition.
+
+    $type - The name of the type being compared.
+    $oldDoc - XML document containing the type's old defitionn.
+    $newDoc - XML document containing the type's new defitionn.
+#>
+function CompareSharedFields( $type, $oldDoc, $newDoc ) {
+
+    $addedFieldSets = @()
+    $removedFieldSets = @()
+
+    # Look for removed feilds
+    foreach( $fieldSet in $oldDoc.SelectNodes( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" ) ) {
+        $fieldSetName = $fieldSet.InnerText
+        $newField = $newDoc.SelectSingleNode( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName[text() = '$fieldSetName']" )
+        if ( -Not $newField ) {
+            $removedFieldSets = $removedFieldSets + $fieldSetName
+        }
+    }
+
+    # Look for new feilds
+    foreach( $fieldSet in $newDoc.SelectNodes( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" ) ) {
+        $fieldSetName = $fieldSet.InnerText
+        $newField = $oldDoc.SelectSingleNode( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName[text() = '$fieldSetName']" )
+        if ( -Not $newField ) {
+            $addedFieldSets = $addedFieldSets + $fieldSetName
+        }
+    }
+
+    if( $addedFieldSets.length -gt 0 ) {
+        BeginCompare "Added Shared Field Sets"
+        foreach($set in $addedFieldSets) {
+            WriteComparison $set
+        }
+        EndCompare
+    }
+    if( $removedFieldSets.length -gt 0 ) {
+        BeginCompare "Removed Shared Field Sets"
+        foreach($set in $removedFieldSets) {
+            WriteComparison $set
+        }
+        EndCompare
+    }
+}
+
+<#
+    Compare the fields between an old and new type definition.
+
+    $type - The name of the type being compared.
+    $oldDoc - XML document containing the type's old defitionn.
+    $newDoc - XML document containing the type's new defitionn.
+#>
+function CompareFields($type, $oldDoc, $newDoc) {
+
+    if( -not $type )  {  Throw '$type paramameter is null.' }
+    if( -not $oldDoc )  {  Throw '$oldDoc paramameter is null.' }
+    if( -not $newDoc )  {  Throw '$newDoc paramameter is null.' }
+
+    $addedFields = @()
+    $removedFields = @()
+    $changedFields = @()
+
+    # Loop through the old set of fields, listing any that are missing or have changed.
+    foreach($field in $oldDoc.SelectNodes("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping")) {
+        $fieldName = $field.FieldRef
+        $newField = $newDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
+
+        if($newField) {
+
+            #Field exists on both sides.  Compare details.
+            $difference = $null
+
+
+            $controlTypeDesc = "Control type"
+            $controlTypeQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/@name"
+
+
+            $labelDesc = "Label"
+            $labelQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/Label/PSXDisplayText/text()"
+
+            $maxlengthDesc = "Max length"
+            $maxlengthQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='maxlength']/DataLocator/PSXTextLiteral/text/text()"
+
+            $helptextDesc = "Helptext"
+            $helptextQuery = "//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping[FieldRef/text() = '$fieldName']/PSXUISet/PSXControlRef/PSXParam[@name='helptext']/DataLocator/PSXTextLiteral/text/text()"
+
+            $descriptionList = @($controlTypeDesc, $labelDesc, $maxlengthDesc, $helptextDesc)
+            $nodeQueryList = @($controlTypeQuery, $labelQuery, $maxlengthQuery, $helptextQuery)
+
+            for($i = 0; $i -lt $descriptionList.length; $i++) {
+                $query = $nodeQueryList[$i]
+                $result = CompareNodeValues $oldDoc $newDoc $query
+                if($result) {
+                    $description = $descriptionList[$i]
+                    $difftext = GetFieldDifferenceText $description $result
+                    $difference = $difference + $difftext
+                }
+            }
+
+
+            # Record any found differences
+            if($difference -ne $null) {
+                $changedFields = $changedFields + "$fieldName - $difference"
+            }
+
+        } else {
+            # Field not found.
+            $removedFields = $removedFields + $fieldName
+        }
+    }
+
+    # Loop through the new set of fields to find any additions.
+    foreach($field in $newDoc.SelectNodes("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping")) {
+        $fieldName = $field.FieldRef
+        $oldField = $oldDoc.SelectSingleNode("//PSXUIDefinition/PSXDisplayMapper/PSXDisplayMapping/FieldRef[text() = '$fieldName']")
+
+        if(-not $oldField) {
+            $addedFields = $addedFields + $fieldName
+        }
+    }
+
+    # Output summary of changes.
+    if($addedFields.length -gt 0 -or $removedFields.length -gt 0 -or $changedFields.length -gt 0 ) {
+        BeginCompare $type
+
+        if($addedFields.length -gt 0) {
+            BeginCompare "Added Fields"
+            foreach($field in $addedFields) {
+                WriteComparison $field
+            }
+            EndCompare
+        }
+
+        if($removedFields.length -gt 0) {
+            BeginCompare "Removed Fields"
+            foreach($field in $removedFields) {
+                WriteComparison $field
+            }
+            EndCompare
+        }
+
+        if($changedFields.length -gt 0) {
+            BeginCompare "Changed Fields"
+            foreach($field in $changedFields) {
+                WriteComparison $field
+            }
+            EndCompare
+        }
+
+        EndCompare
+    }
+
 }
 
 
