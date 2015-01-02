@@ -140,6 +140,10 @@ function CompareFields($type, $oldDoc, $newDoc) {
             }
 
 
+            $visibility = GetVisibilityRuleDifference $oldDoc $newDoc $fieldName
+            $difference = $difference + $visibility
+
+
             # Record any found differences
             if($difference -ne $null) {
                 $changedFields = $changedFields + "$fieldName - $difference"
@@ -207,6 +211,30 @@ function GetFieldDifferenceText($description, $difference) {
     return $text
 }
 
+function GetVisibilityRuleDifference($oldDoc, $newDoc, $fieldName) {
+    $difference = @()
+
+    $oldRule = GetVisibilityRuleText $oldDoc $fieldName
+    $newRule = GetVisibilityRuleText $newDoc $fieldName
+
+    if( $oldRule -ne $newRule ) {
+        $difference = $difference + "Visibility changed from '$oldRule' to '$newRule'"
+    }
+
+    return $difference
+}
+
+function GetVisibilityRuleText($doc, $fieldName) {
+
+    $text = ""
+
+    $ruleNode = $doc.SelectSingleNode("//PSXFieldSet/PSXField[@name='$fieldName']/FieldRules/PSXVisibilityRules/PSXRule/PSXConditional")
+    if($ruleNode) {
+        $text = $ruleNode.InnerText
+    }
+
+    return $text
+}
 
 function CompareNodeValues($oldDoc, $newDoc, $pathQuery) {
     $difference = $null
