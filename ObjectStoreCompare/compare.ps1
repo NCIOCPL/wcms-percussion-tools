@@ -48,8 +48,12 @@ function CompareTypes($oldPath, $newPath, $reconciledFileList) {
 
         $type = GetTypeFromFilename $file
 
+        BeginCompare $type
+
         CompareSharedFields $type $oldDoc $newDoc
         CompareFields $type $oldDoc $newDoc
+
+        EndCompare
     }
 
     EndCompare
@@ -64,26 +68,8 @@ function CompareTypes($oldPath, $newPath, $reconciledFileList) {
 #>
 function CompareSharedFields( $type, $oldDoc, $newDoc ) {
 
-    $addedFieldSets = @()
-    $removedFieldSets = @()
-
-    # Look for removed feilds
-    foreach( $fieldSet in $oldDoc.SelectNodes( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" ) ) {
-        $fieldSetName = $fieldSet.InnerText
-        $newField = $newDoc.SelectSingleNode( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName[text() = '$fieldSetName']" )
-        if ( -Not $newField ) {
-            $removedFieldSets = $removedFieldSets + $fieldSetName
-        }
-    }
-
-    # Look for new feilds
-    foreach( $fieldSet in $newDoc.SelectNodes( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" ) ) {
-        $fieldSetName = $fieldSet.InnerText
-        $newField = $oldDoc.SelectSingleNode( "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName[text() = '$fieldSetName']" )
-        if ( -Not $newField ) {
-            $addedFieldSets = $addedFieldSets + $fieldSetName
-        }
-    }
+    $removedFieldSets = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" $oldDoc $newDoc
+    $addedFieldSets = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" $newDoc $oldDoc
 
     if( $addedFieldSets.length -gt 0 ) {
         BeginCompare "Added Shared Field Sets"
@@ -100,6 +86,7 @@ function CompareSharedFields( $type, $oldDoc, $newDoc ) {
         EndCompare
     }
 }
+
 
 <#
     Compare the fields between an old and new type definition.
@@ -177,34 +164,28 @@ function CompareFields($type, $oldDoc, $newDoc) {
         }
     }
 
-    # Output summary of changes.
-    if($addedFields.length -gt 0 -or $removedFields.length -gt 0 -or $changedFields.length -gt 0 ) {
-        BeginCompare $type
 
-        if($addedFields.length -gt 0) {
-            BeginCompare "Added Fields"
-            foreach($field in $addedFields) {
-                WriteComparison $field
-            }
-            EndCompare
+    if($addedFields.length -gt 0) {
+        BeginCompare "Added Fields"
+        foreach($field in $addedFields) {
+            WriteComparison $field
         }
+        EndCompare
+    }
 
-        if($removedFields.length -gt 0) {
-            BeginCompare "Removed Fields"
-            foreach($field in $removedFields) {
-                WriteComparison $field
-            }
-            EndCompare
+    if($removedFields.length -gt 0) {
+        BeginCompare "Removed Fields"
+        foreach($field in $removedFields) {
+            WriteComparison $field
         }
+        EndCompare
+    }
 
-        if($changedFields.length -gt 0) {
-            BeginCompare "Changed Fields"
-            foreach($field in $changedFields) {
-                WriteComparison $field
-            }
-            EndCompare
+    if($changedFields.length -gt 0) {
+        BeginCompare "Changed Fields"
+        foreach($field in $changedFields) {
+            WriteComparison $field
         }
-
         EndCompare
     }
 
@@ -247,6 +228,31 @@ function CompareNodeValues($oldDoc, $newDoc, $pathQuery) {
     }
 
     return $difference
+}
+
+
+<#
+    Compare a set of values between two XML documents, returning a list of values which appear in
+    the reference document, but not in the one being compared.
+
+    $xPath - xPath expression for finding the values.
+    $reference - The original (baseline) version of the document.
+    $compared - The version of the document being compared.
+#>
+function CompareValueLists( $xPath, $reference, $compared ) {
+
+    $missingValueList = @()
+
+    # Look for values in $reference which don't appear in $compared
+    foreach( $node in $reference.SelectNodes( "$xPath" ) ) {
+        $nodeValue = $node.InnerText
+        $newNode = $compared.SelectSingleNode( "$xPath[text() = '$nodeValue']" )
+        if ( -Not $newNode ) {
+            $missingValueList = $missingValueList + $nodeValue
+        }
+    }
+
+    return $missingValueList
 }
 
 
@@ -332,8 +338,6 @@ function EndCompare() {
     $html = "</ul></section>"
     Add-Content $OutputFile -Value $html
 }
-
-$internalNestingLevel = 1
 
 function WriteComparison($message) {
     Write-Host $message
