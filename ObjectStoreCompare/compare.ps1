@@ -68,23 +68,20 @@ function CompareTypes($oldPath, $newPath, $reconciledFileList) {
 #>
 function CompareSharedFields( $type, $oldDoc, $newDoc ) {
 
-    $removedFieldSets = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" $oldDoc $newDoc
+    # Shared field Sets
     $addedFieldSets = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" $newDoc $oldDoc
+    $removedFieldSets = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldGroupName" $oldDoc $newDoc
 
-    if( $addedFieldSets.length -gt 0 ) {
-        BeginCompare "Added Shared Field Sets"
-        foreach($set in $addedFieldSets) {
-            WriteComparison $set
-        }
-        EndCompare
-    }
-    if( $removedFieldSets.length -gt 0 ) {
-        BeginCompare "Removed Shared Field Sets"
-        foreach($set in $removedFieldSets) {
-            WriteComparison $set
-        }
-        EndCompare
-    }
+    WriteCompareDValueList "Added Shared Field Sets" $addedFieldSets
+    WriteCompareDValueList "Removed Shared Field Sets" $removedFieldSets
+
+    # Shared field name exclusions.
+    $addedFieldExclusions = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldExcludes/FieldRef" $newDoc $oldDoc
+    $removedFieldExclusions = CompareValueLists "//PSXContentEditorMapper/SharedFieldIncludes/SharedFieldExcludes/FieldRef" $oldDoc $newDoc
+
+    WriteCompareDValueList "New Shared Field Name Exclusions" $addedFieldExclusions
+    WriteCompareDValueList "Removed Shared Field Name Exclusions" $removedFieldExclusions
+
 }
 
 
@@ -253,6 +250,17 @@ function CompareValueLists( $xPath, $reference, $compared ) {
     }
 
     return $missingValueList
+}
+
+function WriteCompareDValueList($label, $valueList) {
+
+    if( $valueList.length -gt 0 ) {
+        BeginCompare $label
+        foreach($value in $valueList) {
+            WriteComparison $value
+        }
+        EndCompare
+    }
 }
 
 
