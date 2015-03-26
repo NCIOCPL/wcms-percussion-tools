@@ -1,3 +1,3 @@
 @echo off
-powershell ./safeShutdown.ps1
+powershell -ExecutionPolicy RemoteSigned ./safeShutdown.ps1
 pause

@@ -1,2 +1,3 @@
 @echo off
-powershell ./gkDeploy.ps1 %1
+powershell -ExecutionPolicy RemoteSigned ./gkDeploy.ps1 %1
+pause

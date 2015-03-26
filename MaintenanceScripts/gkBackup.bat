@@ -1,3 +1,3 @@
 @echo off
-powershell ./gkBackup.ps1
+powershell -ExecutionPolicy RemoteSigned ./gkBackup.ps1
 pause

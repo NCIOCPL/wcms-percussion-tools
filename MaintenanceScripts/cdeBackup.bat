@@ -1,3 +1,3 @@
 @echo off
-powershell ./cdeBackup.ps1
+powershell -ExecutionPolicy RemoteSigned ./cdeBackup.ps1
 pause

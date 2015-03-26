@@ -1,2 +1,3 @@
 @echo off
-powershell ./cdeDeploy.ps1 %1
+powershell -ExecutionPolicy RemoteSigned ./cdeDeploy.ps1 %1
+pause

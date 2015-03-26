@@ -1,2 +1,2 @@
-powershell ./safeStartup.ps1
+powershell -ExecutionPolicy RemoteSigned ./safeStartup.ps1
 pause
