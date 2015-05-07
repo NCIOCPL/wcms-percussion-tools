@@ -12,7 +12,7 @@ Function Main {
 		ReportAlreadyRunning
 	} else {
 		DeleteTemporaryFiles
-		#StartPercussion
+		StartPercussion
 	}
 }
 
