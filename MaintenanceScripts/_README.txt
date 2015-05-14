@@ -10,6 +10,8 @@ cdeBackup.ps1		Creates a back up of the CDE code folders.
 cdeDeploy.ps1		Deploys CDE code from a set of per-site folders to the matching Preview
 					and Live sites.
 
+findOldContent.ps1	Finds files older than a certain date.
+					Run from a site's Published content folder.  (Requires a hard-coded date to be updated before running.)
 
 gkBackup.ps1		Creates a back up of the GateKeeper code folders.
 
