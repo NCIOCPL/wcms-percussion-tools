@@ -11,7 +11,9 @@ Function Main {
 	If( $percIsRunning ) {
 		ReportAlreadyRunning
 	} else {
-		DeleteTemporaryFiles
+		# Delete of temporary files is disabled because it needs to be rewritten
+		# Right now, it throws errors about permissions.
+		#DeleteTemporaryFiles
 		StartPercussion
 	}
 }
