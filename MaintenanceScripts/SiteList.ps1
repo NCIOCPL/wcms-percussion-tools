@@ -1,12 +1,13 @@
 function Main() {
 	# The WebAdministration module requires elevated privileges.
-	$isAdmin = Test-Admin
+	$isAdmin = Is-Admin
 	if( $isAdmin ) {
 		Write-Host -foregroundcolor 'green' "Starting..."
 		Import-Module WebAdministration
 		$OutputFile = GetOutputFile
 		GetSiteNames $OutputFile
 		GetAppPools $OutputFile
+		OutputDoneMessage $OutputFile
 	} else {
 		Write-Host -foregroundcolor 'red' "This script must be run from an AA account."
 	}
@@ -41,13 +42,14 @@ function GetAppPools( $OutputFile ) {
 	Get-ChildItem IIS:\AppPools | foreach {
 		$text = "`"" + $_.Name + "`"`t" + $_.managedPipelineMode + "`t" + $_.managedRuntimeVersion
 		
+		# Get the list of associated application names.
 		$appList = GetApplicationList $_.Name
-		if( $appList.Length -gt 0 ) {
+		if( $appList.Length -gt 0 ) {  # Applications exist.
 			foreach($app in $appList) {
 				$localText = $text + "`t`"" + $app + "`""
 				Add-Content $OutputFile -Value $localText
 			}
-		} else {
+		} else {  # No associated applications.
 			$text += "`t`"(none)`""
 			Add-Content $OutputFile -Value $text
 		}
@@ -89,8 +91,20 @@ function GetOutputFile {
 	return $name
 }
 
+function OutputDoneMessage( $OutputFile ) {
+	Write-Host -foregroundcolor 'green' "==========================================================================="
+	Write-Host -foregroundcolor 'green' "==========================================================================="
+	Write-Host -foregroundcolor 'green' "==="
+	Write-Host -foregroundcolor 'green' "===                       Successful Run"
+	Write-Host -foregroundcolor 'green' "==="
+	Write-Host -foregroundcolor 'green' "===                 Please attach $OutputFile"
+	Write-Host -foregroundcolor 'green' "===                        to the ticket"
+	Write-Host -foregroundcolor 'green' "==="
+	Write-Host -foregroundcolor 'green' "==========================================================================="
+	Write-Host -foregroundcolor 'green' "==========================================================================="
+}
 
-function Test-Admin {
+function Is-Admin {
  $id = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
  $id.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 }
