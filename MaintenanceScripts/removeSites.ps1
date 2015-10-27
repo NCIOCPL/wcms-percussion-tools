@@ -1,34 +1,46 @@
 <#
-	Removes web sites from IIS and optionally deletes the site's code and content directories
-	as well as the associated AppPool.
-	
-	Setup: Each site receives an entry in the <SiteList> structure.  Set the
-		attribute values as follows:
+	Removes web sites from IIS and optionally deletes the site's physical folder code,
+	associated AppPool and additional content directories.
+
+	Site Removal
+
+		Every site to be removed receives an entry in the <SiteList> structure.
+		Set the attribute values as follows:
 		
 		name (required) - Contains the site's name from IIS configuration. (Not the host name.)
-						  The sitelist script can provide a list of valid site name's.
+						  The sitelist powershell script can provide a list of valid site name's.
 
 	    removeFiles (optional) - Controls deletion of the site's physical folder.  Set to one (1)
 								to delete.
 								
 		removeAppPool (optional) - Controls deletion of the site's AppPool.  Set to one (1)
 								to delete.
+
+
+	Removing Additonal Directories
+
+		Directories outside a site's direct file tree (e.g. the "PublishedContent" folder
+		associated with a WCMS site) may be deleted by listing them as entries in the
+		<DirectoryList> structure.
+
 #>
 $siteList = [xml]@"
 <SiteList>
 	<Site name="site1" />
-	<Site name="site2" removeFiles="1" />
+	<Site name="site2" removeFiles="1" removeAppPool="1" />
 	<Site name="site3" />
 </SiteList>
 "@
 
-
+$directoryList = [xml]@"
+<DirectoryList>
+	<path>C:\svn\wcmteam\cde\siteCont\site1</path>
+	<path>C:\svn\wcmteam\cde\siteCont\site2</path>
+</DirectoryList>
+"@
 
 
 function Main() {
-Write-Host -foregroundcolor 'red' "Still in development.  Not ready for use."
-return;
-
 	# The WebAdministration module requires elevated privileges.
 	$isAdmin = Is-Admin
 	if( $isAdmin ) {
@@ -37,19 +49,31 @@ return;
 
 		# Delete sites.
 		foreach($site in $siteList.SiteList.Site) {
-			RemoveSite $site.name $site.removeFiles
+			RemoveSite $site.name $site.removeFiles $site.removeAppPool
 		}
 
+		# Delete extra paths
+		foreach($path in $directoryList.Directorylist.path) {
+			RemovePath $path
+		}
+		
 	} else {
 		Write-Host -foregroundcolor 'red' "This script must be run from an AA account."
 	}
 }
 
 <#
-	Remove $siteName from IIS.  If $removeFiles is set to one (1), the site's physical path
-	is removed as well. (All other $removeFiles values are ignored.)
+	Remove $siteName from IIS.
+	
+	$siteName - IIS name for the site to be removed.
+
+	$removeFiles - If set to one (1), the site's physical directory is removed as well.
+					(All other $removeFiles values are ignored.)
+
+	$removeAppPool - If set to one (1), the site's associated AppPool is removed.
+					(All other $removeFiles values are ignored.)
 #>
-function RemoveSite($siteName, $removeFiles) {
+function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 
 	Write-Host "Deleting $siteName."
 	
@@ -57,11 +81,18 @@ function RemoveSite($siteName, $removeFiles) {
 	$details = GetSiteDetails $siteName
 	
 	if( $details -ne $null ) {
-		if($removeFiles -eq 1) {
+		if( $removeFiles -eq 1 ) {
 			Write-Host "Removing Site Folder."
-			RemoveFiles $details.physicalPath
+			RemovePath $details.physicalPath
 		} else {
 			Write-Host "Skipping Site Folder."
+		}
+		
+		if( $removeAppPool -eq 1 ) {
+			Write-Host "Removing AppPool " $details.applicationPool "."
+			Remove-WebAppPool $details.applicationPool
+		} else {
+			Write-Host "Skipping AppPool."
 		}
 		
 		Remove-WebSite $siteName
@@ -73,13 +104,13 @@ function RemoveSite($siteName, $removeFiles) {
 <#
 	Removes the directory $deletePath and all everything below it.
 #>
-function RemoveFiles($deletePath) {
+function RemovePath($deletePath) {
 
 	if( $deletePath -ne $null ) {
-		Write-Host 'Removing' deletePath
+		Write-Host 'Removing' $deletePath
 		Remove-Item $deletePath -Recurse -Force
 	} else {
-		Write-Host -foregroundcolor 'red' "RemoveFiles: Path must not be null."
+		Write-Host -foregroundcolor 'red' "RemovePath: Path must not be null."
 	}
 }
 
