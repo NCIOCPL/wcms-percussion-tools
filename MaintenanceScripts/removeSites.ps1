@@ -8,23 +8,22 @@
 		name (required) - Contains the site's name from IIS configuration. (Not the host name.)
 						  The sitelist script can provide a list of valid site name's.
 
-	    removeCode (optional) - Controls deletion of the site's physical folder.  Set to zero (0)
-								to suppress deletion.
+	    removeFiles (optional) - Controls deletion of the site's physical folder.  Set to one (1)
+								to delete.
 								
-		removeContent (optional) - Controls deletion of the site's content folder.  Set to zero (0)
-								to suppress deletion.  See $contentFolderBase (below) for more information.
-								
-		removeAppPool (optional) - Controls deletion of the site's AppPool.  Set to zero (0)
-								to suppress deletion.
+		removeAppPool (optional) - Controls deletion of the site's AppPool.  Set to one (1)
+								to delete.
 #>
 $siteList = [xml]@"
 <SiteList>
-	<Site name="site1" removeCode="0" removeContent="0" removeAppPool="0" />
-	<Site name="site2" />
+	<Site name="site1" />
+	<Site name="site2" removeFiles="1" />
+	<Site name="site3" />
 </SiteList>
 "@
 
-$contentFolderBase="C:\svn\wcmteam\cde\siteCont"
+
+
 
 function Main() {
 Write-Host -foregroundcolor 'red' "Still in development.  Not ready for use."
@@ -36,8 +35,9 @@ return;
 		Write-Host -foregroundcolor 'green' "Starting..."
 		Import-Module WebAdministration
 
+		# Delete sites.
 		foreach($site in $siteList.SiteList.Site) {
-			DoRemoval $site.name $site.removeCode $site.removeContent $site.removeAppPool
+			RemoveSite $site.name $site.removeFiles
 		}
 
 	} else {
@@ -45,35 +45,48 @@ return;
 	}
 }
 
-function DoRemoval($siteName, $removeCode, $removeContent, $removeAppPool) {
+<#
+	Remove $siteName from IIS.  If $removeFiles is set to one (1), the site's physical path
+	is removed as well. (All other $removeFiles values are ignored.)
+#>
+function RemoveSite($siteName, $removeFiles) {
 
 	Write-Host "Deleting $siteName."
 	
 	# Get-WebSite always returns an array.
 	$details = GetSiteDetails $siteName
-
-	if($removeCode -ne 0) {
-		Write-Host "Removing Code Folder."
-		RemoveCode $details
-	} else {
-		Write-Host "Skipping Code Folder."
-	}
 	
-	Remove-WebSite $siteName
-}
-
-function RemoveCode($siteDetails) {
-
-	if( $siteDetails -ne $null ) {
-		if( $siteDetails.physicalPath -ne $null ) {
-			Write-Host 'Removing' $siteDetails.physicalPath
-			Remove-Item $siteDetails.physicalPath -Recurse -Force
+	if( $details -ne $null ) {
+		if($removeFiles -eq 1) {
+			Write-Host "Removing Site Folder."
+			RemoveFiles $details.physicalPath
 		} else {
-			Write-Host -foregroundcolor 'red' "No physical path data available for " $siteDetails.Name
+			Write-Host "Skipping Site Folder."
 		}
+		
+		Remove-WebSite $siteName
+	} else {
+		Write-Host -foreground 'red' "Site $siteName not found."
 	}
 }
 
+<#
+	Removes the directory $deletePath and all everything below it.
+#>
+function RemoveFiles($deletePath) {
+
+	if( $deletePath -ne $null ) {
+		Write-Host 'Removing' deletePath
+		Remove-Item $deletePath -Recurse -Force
+	} else {
+		Write-Host -foregroundcolor 'red' "RemoveFiles: Path must not be null."
+	}
+}
+
+<#
+	Looks up IIS details for the site specified in $siteName.
+	Returns null if the site is unknown.
+#>
 function GetSiteDetails( $siteName ) {
 	# In PowerShell 2, Get-WebSite returns information for *all* sites, regardless of whether a
 	# name is supplied, so we have to do the filtering ourselves. Web site names are unique,
@@ -82,11 +95,13 @@ function GetSiteDetails( $siteName ) {
 	if($details -ne $null) {
 		return $details
 	} else {
-		Write-Host -foregroundcolor 'red' "No Details available for $siteName."
 		return $null
 	}
 }
 
+<#
+	Verify that the currently logged in user has administrator access.
+#>
 function Is-Admin {
  $id = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
  $id.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
