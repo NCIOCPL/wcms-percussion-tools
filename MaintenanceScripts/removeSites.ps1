@@ -81,6 +81,9 @@ function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 	$details = GetSiteDetails $siteName
 	
 	if( $details -ne $null ) {
+
+		Stop-Website $details.Name
+
 		if( $removeFiles -eq 1 ) {
 			Write-Host "Removing Site Folder."
 			RemovePath $details.physicalPath
@@ -90,11 +93,15 @@ function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 		
 		if( $removeAppPool -eq 1 ) {
 			Write-Host "Removing AppPool " $details.applicationPool "."
+			Stop-WebAppPool $details.applicationPool
 			Remove-WebAppPool $details.applicationPool
 		} else {
 			Write-Host "Skipping AppPool."
+			# If we're not removing the AppPool, bounce it.
+			Restart-WebAppPool $details.applicationPool
 		}
 		
+		# Remove the acutal site.
 		Remove-WebSite $siteName
 	} else {
 		Write-Host -foreground 'red' "Site $siteName not found."
