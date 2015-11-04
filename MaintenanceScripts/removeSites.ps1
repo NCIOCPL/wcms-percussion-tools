@@ -39,12 +39,26 @@ $directoryList = [xml]@"
 </DirectoryList>
 "@
 
+$Logfile = ".\removeSites.log"
+
+# Write script output to console and append to log file
+# @param $logString - the text to be displayed
+# @param $color - the text color for the console; defaults to green if none specified
+function WriteToConsoleAndLog($logString, $color) {
+	if (-Not($color)) { $color = "green" }
+	Write-Host $logString -foregroundcolor $color
+	Add-content $Logfile -value $logString 
+}
 
 function Main() {
+	# Print timestamp
+	$timestamp = Get-Date -format "`nyyyy-MM-dd HH:mm:ss.fff";
+	WriteToConsoleAndLog $timestamp
+
 	# The WebAdministration module requires elevated privileges.
 	$isAdmin = Is-Admin
 	if( $isAdmin ) {
-		Write-Host -foregroundcolor 'green' "Starting..."
+		WriteToConsoleAndLog "Starting..."
 		Import-Module WebAdministration
 
 		# Delete sites.
@@ -58,7 +72,7 @@ function Main() {
 		}
 		
 	} else {
-		Write-Host -foregroundcolor 'red' "This script must be run from an AA account."
+		WriteToConsoleAndLog "This script must be run from an AA account." "red"
 	}
 }
 
@@ -75,7 +89,7 @@ function Main() {
 #>
 function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 
-	Write-Host "Deleting $siteName."
+	WriteToConsoleAndLog "Deleting $siteName."
 	
 	# Get-WebSite always returns an array.
 	$details = GetSiteDetails $siteName
@@ -85,18 +99,19 @@ function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 		Stop-Website $details.Name
 
 		if( $removeFiles -eq 1 ) {
-			Write-Host "Removing Site Folder."
+			WriteToConsoleAndLog "Removing Site Folder."
 			RemovePath $details.physicalPath
 		} else {
-			Write-Host "Skipping Site Folder."
+			WriteToConsoleAndLog "Skipping Site Folder."
 		}
 		
 		if( $removeAppPool -eq 1 ) {
-			Write-Host "Removing AppPool " $details.applicationPool "."
+			$removeAppPoolDetails = "Removing AppPool " + $details.applicationPool + ".";
+			WriteToConsoleAndLog $removeAppPoolDetails
 			Stop-WebAppPool $details.applicationPool
 			Remove-WebAppPool $details.applicationPool
 		} else {
-			Write-Host "Skipping AppPool."
+			WriteToConsoleAndLog "Skipping AppPool."
 			# If we're not removing the AppPool, bounce it.
 			Restart-WebAppPool $details.applicationPool
 		}
@@ -104,7 +119,7 @@ function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 		# Remove the acutal site.
 		Remove-WebSite $siteName
 	} else {
-		Write-Host -foreground 'red' "Site $siteName not found."
+		WriteToConsoleAndLog "Site $siteName not found." "red"
 	}
 }
 
@@ -114,10 +129,18 @@ function RemoveSite($siteName, $removeFiles, $removeAppPool) {
 function RemovePath($deletePath) {
 
 	if( $deletePath -ne $null ) {
-		Write-Host 'Removing' $deletePath
-		Remove-Item $deletePath -Recurse -Force
+		Try {
+			$deletePathDetails = 'Removing ' + $deletePath
+			WriteToConsoleAndLog $deletePathDetails
+			Remove-Item $deletePath -Recurse -Force -ErrorAction Stop
+		}
+		Catch {[System.Management.Automation.ItemNotFoundException]
+			$deletePathDetails = 'Path ' + $deletePath + ' not found.';
+			WriteToConsoleAndLog $deletePathDetails "red"
+		}
+		
 	} else {
-		Write-Host -foregroundcolor 'red' "RemovePath: Path must not be null."
+		WriteToConsoleAndLog "RemovePath: Path must not be null." "red"
 	}
 }
 
