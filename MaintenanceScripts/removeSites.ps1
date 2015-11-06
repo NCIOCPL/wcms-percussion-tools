@@ -26,9 +26,9 @@
 #>
 $siteList = [xml]@"
 <SiteList>
-	<Site name="site1" />
+	<Site name="site1" removeFiles="1" removeAppPool="1"/>
 	<Site name="site2" removeFiles="1" removeAppPool="1" />
-	<Site name="site3" />
+	<Site name="site3" removeFiles="1" removeAppPool="1"/>
 </SiteList>
 "@
 
@@ -39,22 +39,10 @@ $directoryList = [xml]@"
 </DirectoryList>
 "@
 
-$Logfile = ".\removeSites.log"
-
-# Write script output to console and append to log file
-# @param $logString - the text to be displayed
-# @param $color - the text color for the console; defaults to green if none specified
-function WriteToConsoleAndLog($logString, $color) {
-	if (-Not($color)) { $color = "green" }
-	Write-Host $logString -foregroundcolor $color
-	Add-content $Logfile -value $logString 
-}
+$logFile = ".\removeSites.log"
+$timestamp = Get-Date -format "yyyy-MM-dd HH:mm:ss.fff";
 
 function Main() {
-	# Print timestamp
-	$timestamp = Get-Date -format "`nyyyy-MM-dd HH:mm:ss.fff";
-	WriteToConsoleAndLog $timestamp
-
 	# The WebAdministration module requires elevated privileges.
 	$isAdmin = Is-Admin
 	if( $isAdmin ) {
@@ -134,8 +122,9 @@ function RemovePath($deletePath) {
 			WriteToConsoleAndLog $deletePathDetails
 			Remove-Item $deletePath -Recurse -Force -ErrorAction Stop
 		}
-		Catch {[System.Management.Automation.ItemNotFoundException]
-			$deletePathDetails = 'Path ' + $deletePath + ' not found.';
+		Catch {[System.SystemException]
+			$deletePathDetails = 'Error removing "' + $deletePath + 
+				'". Verify path name and check if files are open in another program.';
 			WriteToConsoleAndLog $deletePathDetails "red"
 		}
 		
@@ -158,6 +147,18 @@ function GetSiteDetails( $siteName ) {
 	} else {
 		return $null
 	}
+}
+
+<#
+	Write script output to console and append to log file
+	@param $logString - the text to be displayed
+	@param $color - the text color for the console; defaults to green if none specified
+#>
+function WriteToConsoleAndLog($logString, $color) {
+	if (-Not($color)) { $color = "green" }
+	Write-Host $logString -foregroundcolor $color
+	$logEntry = $timestamp + "`t" + $logString;
+	Add-content $logFile -value $logEntry
 }
 
 <#
