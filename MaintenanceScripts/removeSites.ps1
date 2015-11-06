@@ -40,7 +40,6 @@ $directoryList = [xml]@"
 "@
 
 $logFile = ".\removeSites.log"
-$timestamp = Get-Date -format "yyyy-MM-dd HH:mm:ss.fff";
 
 function Main() {
 	# The WebAdministration module requires elevated privileges.
@@ -155,8 +154,11 @@ function GetSiteDetails( $siteName ) {
 	@param $color - the text color for the console; defaults to green if none specified
 #>
 function WriteToConsoleAndLog($logString, $color) {
+	# Print to screen
 	if (-Not($color)) { $color = "green" }
 	Write-Host $logString -foregroundcolor $color
+	# Write to log file
+	$timestamp = Get-Date -format "yyyy-MM-dd HH:mm:ss.fff";
 	$logEntry = $timestamp + "`t" + $logString;
 	Add-content $logFile -value $logEntry
 }
