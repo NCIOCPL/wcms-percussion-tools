@@ -30,7 +30,7 @@ function Deploy ($sourceLocation) {
         foreach( $subsite in $SUBSITE_LIST ) {
             $destination = "$DEPLOY_BASE\$site\$subsite\code"
             
-            Robocopy $source $destination /mir /xf *.config robots.txt *.pdb
+            Robocopy $source $destination /mir /xf *.config robots.txt *.pdb /xd localConfig
         }
     }
 
