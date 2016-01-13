@@ -3,7 +3,7 @@
 #>
 param ($source)
 
-$SITE_LIST = @("CancerGov", "MobileCancerGov", "CCOP", "DCEG", "Imaging", "Proteomics", "TCGA")
+$SITE_LIST = @("CancerGov", "MobileCancerGov", "DCEG", "Imaging", "Proteomics", "TCGA")
 $SUBSITE_LIST = @("Preview", "Live")
 $DEPLOY_BASE = "E:\Content\PercussionSites\CDESites"
 
