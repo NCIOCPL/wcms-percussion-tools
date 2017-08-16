@@ -10,6 +10,9 @@ cdeBackup.ps1		Creates a back up of the CDE code folders.
 cdeDeploy.ps1		Deploys CDE code from a set of per-site folders to the matching Preview
 					and Live sites.
 
+CopyToContent.bat	Copying a different server's content tree without overwriting any other
+					part of the E:\Content folder.
+					
 findOldContent.ps1	Finds files older than a certain date.
 					Run from a site's Published content folder.  (Requires a hard-coded date to be updated before running.)
 
