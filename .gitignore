@@ -1,0 +1,21 @@
+
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.user
+_ReSharper.*
+
+[Bb]in
+obj
+[Dd]ebug
+[Rr]elease
+
+
+/ExtractHelpText/trunk/ipch
+/ExtractHelpText/trunk/EPPlus/EPPlus 3.0.chw
+
+/ExtractHelpText/trunk/Extract/*.aps
+/ExtractHelpText/trunk/Extract/*.eto
+
+/ObjectStoreCompare/ComparisonReport.htm
